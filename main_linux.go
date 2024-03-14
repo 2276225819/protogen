@@ -65,7 +65,7 @@ func loadfile() error {
 		case tar.TypeReg: // 如果是文件就写入到磁盘
 			// 创建目标文件
 			if regrn.MatchString(path.Base(header.Name)) {
-				outputFile = path.Join(outputDir, regrn.ReplaceAllString(path.Base(header.Name), "protoc-gen-${1}-grpc"))
+				outputFile = path.Join(outputDir, regrn.ReplaceAllString(path.Base(header.Name), "protoc-gen-${1}"))
 			}
 			outFile, err := os.Create(outputFile)
 			if err != nil {

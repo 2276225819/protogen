@@ -38,7 +38,7 @@ func loadfile() error {
 	for _, file := range zipFile.File {
 		filePath := path.Join(tmpDir, file.Name)
 		if regrn.MatchString(file.Name) {
-			filePath = path.Join(tmpDir, regrn.ReplaceAllString(file.Name, "protoc-gen-${1}-grpc.exe"))
+			filePath = path.Join(tmpDir, regrn.ReplaceAllString(file.Name, "protoc-gen-${1}.exe"))
 		}
 		if file.FileInfo().IsDir() {
 			// 创建目录
