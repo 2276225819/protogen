@@ -1,4 +1,4 @@
-module protogen
+module github.com/2276225819/protogen
 
 go 1.20
 
