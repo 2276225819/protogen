@@ -1,0 +1,31 @@
+version: v1
+
+proto_paths: #引用路径
+  - "D:\\protoc\\"
+  - "C:\\Protos\\"
+
+proto_files: #输入路径
+  - "C:\\Protos\\*.proto"
+
+option: #文件选项
+  #  csharp_namespace: "GrpcService1"
+  go_package: "my-project/protos"
+
+plugins:  #插件设置
+  - name: go
+    out: "D:\\protos"
+    opt: "module=my-project/protos"
+  - name: go-grpc
+    out: "D:\\protos"
+    opt: ["module=my-project/protos","require_unimplemented_servers=false"]
+  - name: validate
+    out: "lang=go:D:\\protos"
+    opt: "module=my-project/protos"
+  - name: csharp
+    out: "D:\\protos\\csharp"
+  - name: csharp-grpc
+    out: "D:\\protos\\csharp"
+  - name: validate
+    out: "lang=cc:D:\\protos\\java"
+
+
