@@ -2,9 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -33,7 +33,8 @@ func main() {
 	exe := "protoc "
 	txt, e := os.ReadFile(C)
 	if e != nil {
-		tx := "option: #文件选项\n" +
+		tx := "# @see https://github.com/2276225819/protogen/blob/master/example.config.yaml\n\n" +
+			"option: #文件选项\n" +
 			"  # go_package: \"GrpcService1/\"\n" +
 			"plugins: #插件和输出路径\n" +
 			"  # - name: go \n" +
@@ -43,8 +44,8 @@ func main() {
 			"  # - \"./protoc\"\n" +
 			"proto_files: #输入路径\n" +
 			"  # - \"./protoc/*.proto\"\n"
-		_ = os.WriteFile("config.yaml", []byte(tx), os.FileMode(0777))
-		panic(errors.Wrap(e, "找不到配置文件，已重新生成 config.yaml"))
+		_ = os.WriteFile(C, []byte(tx), os.FileMode(0777))
+		log.Fatal(errors.Wrap(e, "找不到配置文件，已重新生成 "+C))
 	}
 	ee := yaml.Unmarshal(txt, &cfg)
 	if ee != nil {
@@ -52,13 +53,17 @@ func main() {
 	}
 	_, e = bash(exe + " --version")
 	if e != nil {
-		exe = "./protoc "
+		if filepath.Separator == '/' {
+			exe = "./protoc "
+		}
 		_, e = bash(exe + " --version")
 		if e != nil {
-			fmt.Println("找不到 protoc 官网下载中...")
-			e := loadfile() // "，需要到官网下载: \n https://packages.grpc.io/archive/2019/12/e522302e33b2420722f866e3de815e4e0a1d9952-219973fd-1007-4db7-a78f-976ec554952d/index.xml"))
+			_, e = bash("go install google.golang.org/protobuf/cmd/protoc-gen-go@latest")
+			_, e = bash("go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest")
+			log.Println("找不到 protoc 官网下载中...")
+			e = loadfile()
 			if ee != nil {
-				panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/archive/2019/12/e522302e33b2420722f866e3de815e4e0a1d9952-219973fd-1007-4db7-a78f-976ec554952d/index.xml"))
+				log.Fatal(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/archive/2019/12/e522302e33b2420722f866e3de815e4e0a1d9952-219973fd-1007-4db7-a78f-976ec554952d/index.xml"))
 			}
 		}
 	}
@@ -94,7 +99,7 @@ func main() {
 			func() { _ = os.WriteFile(path, []byte(txt), os.FileMode(0777)) },
 			func() { _ = os.WriteFile(path, _txt, os.FileMode(0777)) },
 		}
-		fmt.Println("add option " + path)
+		log.Println("add option " + path)
 	}
 
 	// 拼接命令
@@ -126,13 +131,13 @@ func main() {
 		}()
 		_, err := bash(exe)
 		if err != nil {
-			panic(err)
+			log.Fatal(err)
 		}
-		fmt.Println("done")
+		log.Println("done")
 	} else {
 		exe = strings.ReplaceAll(exe, "--", "\n--")
 		exe = strings.ReplaceAll(exe, "\t", "\n  ")
-		fmt.Println(exe)
+		log.Println(exe)
 	}
 }
 

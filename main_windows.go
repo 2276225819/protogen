@@ -11,7 +11,7 @@ import (
 	"regexp"
 )
 
-var url = "https://packages.grpc.io/archive/2019/12/e522302e33b2420722f866e3de815e4e0a1d9952-219973fd-1007-4db7-a78f-976ec554952d/protoc/grpc-protoc_windows_x64-1.27.0-dev.zip"
+var url = "https://packages.grpc.io/archive/2024/03/c910004328210668e0180847c35f9d2e82fa81dd-f88f5a84-a5e1-440a-8465-d9ef99a01bc1/protoc/grpc-protoc_windows_x64-1.63.0-dev.zip"
 
 func loadfile() error {
 	tmpDir := os.TempDir()
