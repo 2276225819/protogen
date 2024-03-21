@@ -14,6 +14,7 @@ import (
 
 var C = "config.yaml"
 var T = false
+var bp = os.TempDir()
 var cfg = struct {
 	Paths   []string `yaml:"proto_paths"`
 	Files   []string `yaml:"proto_files"`
@@ -25,12 +26,18 @@ var cfg = struct {
 	Option map[string]string `yaml:"option"`
 }{}
 
-func main() {
+func init() {
 	flag.StringVar(&C, "c", C, "config path")
 	flag.BoolVar(&T, "t", false, "test run")
 	flag.Parse()
+}
 
-	exe := "protoc "
+func main() {
+	defer func() {
+		if e := recover(); e != nil {
+			log.Fatal(e)
+		}
+	}()
 	txt, e := os.ReadFile(C)
 	if e != nil {
 		tx := "# @see https://github.com/2276225819/protogen/blob/master/example.config.yaml\n\n" +
@@ -39,32 +46,36 @@ func main() {
 			"plugins: #插件和输出路径\n" +
 			"  # - name: go \n" +
 			"  #   out: \"./go\" \n" +
-			"  #   opt: \"./go\" \n" +
+			"  #   opt: \"module=GrpcService1/\" \n" +
 			"proto_paths: #引用路径\n" +
 			"  # - \"./protoc\"\n" +
 			"proto_files: #输入路径\n" +
 			"  # - \"./protoc/*.proto\"\n"
 		_ = os.WriteFile(C, []byte(tx), os.FileMode(0777))
-		log.Fatal(errors.Wrap(e, "找不到配置文件，已重新生成 "+C))
+		panic(errors.Wrap(e, "找不到配置文件，已重新生成 "+C))
 	}
 	ee := yaml.Unmarshal(txt, &cfg)
 	if ee != nil {
 		panic(errors.Wrap(e, "配置解析失败"))
 	}
+	exe := "protoc "
+	if filepath.Separator == '/' {
+		exe = "./protoc "
+	}	
 	_, e = bash(exe + " --version")
 	if e != nil {
-		if filepath.Separator == '/' {
-			exe = "./protoc "
+		log.Println("找不到 protoc 正在从官网下载中...")
+		e = loadfile(bp)
+		if ee != nil {
+			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
 		}
-		_, e = bash(exe + " --version")
-		if e != nil {
-			_, e = bash("go install google.golang.org/protobuf/cmd/protoc-gen-go@latest")
-			_, e = bash("go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest")
-			log.Println("找不到 protoc 官网下载中...")
-			e = loadfile()
-			if ee != nil {
-				log.Fatal(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/archive/2019/12/e522302e33b2420722f866e3de815e4e0a1d9952-219973fd-1007-4db7-a78f-976ec554952d/index.xml"))
-			}
+		_, e = bash("go install google.golang.org/protobuf/cmd/protoc-gen-go@latest")
+		if ee != nil {
+			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
+		}
+		_, e = bash("go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest")
+		if ee != nil {
+			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
 		}
 	}
 
@@ -131,7 +142,7 @@ func main() {
 		}()
 		_, err := bash(exe)
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 		log.Println("done")
 	} else {
@@ -186,7 +197,7 @@ func bash(a ...string) (string, error) {
 		s = append(s, str)
 	}
 	cmd := exec.Command(s[0], s[1:]...)
-	cmd.Dir = os.TempDir()
+	cmd.Env = append(cmd.Env, "Path="+os.Getenv("Path")+";"+bp)
 	out, e := cmd.CombinedOutput()
 	if e != nil {
 		return "", errors.New("[bash]\n" + strings.Join(s, " ") + "\n" + (string)(out) + "\n" + e.Error())

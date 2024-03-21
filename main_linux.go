@@ -14,8 +14,7 @@ import (
 
 var url = "https://packages.grpc.io/archive/2024/03/c910004328210668e0180847c35f9d2e82fa81dd-f88f5a84-a5e1-440a-8465-d9ef99a01bc1/protoc/grpc-protoc_linux_x64-1.63.0-dev.tar.gz"
 
-func loadfile() error {
-	outputDir := os.TempDir()
+func loadfile(outputDir string) error {
 
 	resp, err := http.Get(url)
 	if err != nil {
