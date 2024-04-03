@@ -3,27 +3,29 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
-	"github.com/pkg/errors"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
+
+	"github.com/pkg/errors"
 )
 
 var url = "https://packages.grpc.io/archive/2024/03/c910004328210668e0180847c35f9d2e82fa81dd-f88f5a84-a5e1-440a-8465-d9ef99a01bc1/protoc/grpc-protoc_linux_x64-1.63.0-dev.tar.gz"
 
 func loadfile(outputDir string) error {
+	log.Println("下载文件")
 
 	resp, err := http.Get(url)
 	if err != nil {
 		return errors.Wrap(err, "打开文件失败:")
-
 	}
 	defer resp.Body.Close()
 
-	// 解压 tar.gz 文件
+	log.Println("解压文件")
 	gzipReader, err := gzip.NewReader(resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "解压文件失败:")
@@ -43,7 +45,6 @@ func loadfile(outputDir string) error {
 		return (err == nil || os.IsExist(err)) && fi.IsDir()
 	}
 
-	// 逐个解压文件
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
@@ -66,6 +67,7 @@ func loadfile(outputDir string) error {
 			if regrn.MatchString(path.Base(header.Name)) {
 				outputFile = path.Join(outputDir, regrn.ReplaceAllString(path.Base(header.Name), "protoc-gen-${1}-grpc"))
 			}
+			log.Println("创建目标文件" + outputFile)
 			outFile, err := os.Create(outputFile)
 			if err != nil {
 				return errors.Wrap(err, "创建本地文件失败:")
@@ -87,5 +89,6 @@ func loadfile(outputDir string) error {
 
 	}
 
+	log.Println("解压文件完成")
 	return nil
 }

@@ -2,14 +2,16 @@ package main
 
 import (
 	"flag"
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 var C = "config.yaml"
@@ -59,9 +61,6 @@ func main() {
 		panic(errors.Wrap(e, "配置解析失败"))
 	}
 	exe := "protoc "
-	if filepath.Separator == '/' {
-		exe = "./protoc "
-	}	
 	_, e = bash(exe + " --version")
 	if e != nil {
 		log.Println("找不到 protoc 正在从官网下载中...")
@@ -69,10 +68,12 @@ func main() {
 		if ee != nil {
 			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
 		}
+		log.Println("正在从官网下载 protoc-gen-go 不需要可以直接终止")
 		_, e = bash("go install google.golang.org/protobuf/cmd/protoc-gen-go@latest")
 		if ee != nil {
 			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
 		}
+		log.Println("正在从官网下载 protoc-gen-go-grpc 不需要可以直接终止")
 		_, e = bash("go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest")
 		if ee != nil {
 			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
@@ -115,9 +116,10 @@ func main() {
 
 	// 拼接命令
 	for _, path := range cfg.Paths {
-		exe += "-I=" + (path) + " "
+		exe += "-I=" + strconv.Quote(path) + " "
 	}
 	for _, c := range cfg.Plugins {
+		_ = os.MkdirAll(c.Out, 0777)
 		exe += "--" + c.Name + "_out=" + c.Out + " "
 		switch f := c.Opt.(type) {
 		case []any:
@@ -128,7 +130,9 @@ func main() {
 			exe += "--" + c.Name + "_opt=" + f + " "
 		}
 	}
-	exe += "\t" + strings.Join(cfg.Files, " ")
+	for _, file := range cfg.Files {
+		exe += "\t" + strconv.Quote(file)
+	}
 
 	// 执行命令
 	if !T {
@@ -197,7 +201,11 @@ func bash(a ...string) (string, error) {
 		s = append(s, str)
 	}
 	cmd := exec.Command(s[0], s[1:]...)
-	cmd.Env = append(cmd.Env, "Path="+os.Getenv("Path")+";"+bp)
+	if filepath.Separator == '/' {
+		cmd.Env = append(cmd.Env, "PATH="+os.Getenv("PATH")+":"+bp)
+	} else {
+		cmd.Env = append(cmd.Env, "Path="+os.Getenv("Path")+";"+bp)
+	}
 	out, e := cmd.CombinedOutput()
 	if e != nil {
 		return "", errors.New("[bash]\n" + strings.Join(s, " ") + "\n" + (string)(out) + "\n" + e.Error())
