@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -68,12 +67,12 @@ func main() {
 		if ee != nil {
 			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
 		}
-		log.Println("正在从官网下载 protoc-gen-go 不需要可以直接终止")
+		log.Println("正在从官网下载 protoc-gen-go (需要可访问google) 不需要可以直接终止")
 		_, e = bash("go install google.golang.org/protobuf/cmd/protoc-gen-go@latest")
 		if ee != nil {
 			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
 		}
-		log.Println("正在从官网下载 protoc-gen-go-grpc 不需要可以直接终止")
+		log.Println("正在从官网下载 protoc-gen-go-grpc (需要可访问google) 不需要可以直接终止")
 		_, e = bash("go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest")
 		if ee != nil {
 			panic(errors.Wrap(e, "下载失败 需要到官网下载: \\n https://packages.grpc.io/"))
@@ -116,7 +115,7 @@ func main() {
 
 	// 拼接命令
 	for _, path := range cfg.Paths {
-		exe += "-I=" + strconv.Quote(path) + " "
+		exe += "-I=" + /*strconv.Quote*/ (path) + " "
 	}
 	for _, c := range cfg.Plugins {
 		_ = os.MkdirAll(c.Out, 0777)
@@ -131,7 +130,7 @@ func main() {
 		}
 	}
 	for _, file := range cfg.Files {
-		exe += "\t" + strconv.Quote(file)
+		exe += "\t" + /*strconv.Quote*/ (file)
 	}
 
 	// 执行命令
